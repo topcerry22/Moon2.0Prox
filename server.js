@@ -4,10 +4,11 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const SELF = 'https://moonprox.onrender.com';
 
 app.use(cors({ origin: '*' }));
 
-// Image proxy route — fetches external images and pipes them through
+// Image proxy — fetches any image and pipes it through
 app.get('/imgproxy', async (req, res) => {
   const url = req.query.url;
   if (!url) return res.status(400).send('Missing url');
@@ -45,26 +46,25 @@ app.get('/search', async (req, res) => {
 
     let html = response.data;
 
-    // Fix protocol-relative URLs (//duckduckgo.com/... and //external-content.duckduckgo.com/...)
-    html = html.replace(/src="\/\//g, 'src="https://');
-    html = html.replace(/src='\/\//g, "src='https://");
-
-    // Fix root-relative URLs
+    // Fix href and form actions
     html = html.replace(/href="\//g, 'href="https://duckduckgo.com/');
-    html = html.replace(/src="\//g, 'src="https://duckduckgo.com/');
     html = html.replace(/action="\//g, 'action="https://duckduckgo.com/');
 
-    // Route all external-content images through our image proxy
-    // so they aren't blocked by the browser's mixed-content or CORS rules
-    const SELF = 'https://moonprox.onrender.com';
-    html = html.replace(
-      /src="(https:\/\/external-content\.duckduckgo\.com[^"]+)"/g,
-      (match, url) => `src="${SELF}/imgproxy?url=${encodeURIComponent(url)}"`
-    );
-    html = html.replace(
-      /src="(https:\/\/[^"]*duckduckgo\.com\/i\/[^"]+)"/g,
-      (match, url) => `src="${SELF}/imgproxy?url=${encodeURIComponent(url)}"`
-    );
+    // Route ALL images through imgproxy — catches challenge images, thumbnails, icons
+    // 1. Protocol-relative: //external-content.duckduckgo.com/...
+    html = html.replace(/src="(\/\/[^"]+)"/g, (match, url) => {
+      const full = 'https:' + url;
+      return `src="${SELF}/imgproxy?url=${encodeURIComponent(full)}"`;
+    });
+    // 2. Root-relative: /assets/anomaly/images/challenge/...
+    html = html.replace(/src="(\/[^"]+)"/g, (match, path) => {
+      const full = 'https://duckduckgo.com' + path;
+      return `src="${SELF}/imgproxy?url=${encodeURIComponent(full)}"`;
+    });
+    // 3. Absolute URLs: https://...
+    html = html.replace(/src="(https?:\/\/[^"]+)"/g, (match, url) => {
+      return `src="${SELF}/imgproxy?url=${encodeURIComponent(url)}"`;
+    });
 
     const inject = `
       <base target="_blank">
