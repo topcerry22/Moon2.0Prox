@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Moon</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #06080f;
+    --surface:   #0d1120;
+    --card:      #111627;
+    --border:    #1e2a45;
+    --accent:    #4f8aff;
+    --accent2:   #a78bfa;
+    --glow:      rgba(79,138,255,0.35);
+    --text:      #e8eeff;
+    --muted:     #5a6a8a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+  }
+
+  /* ─── STARS BACKGROUND ─────────────────────────────── */
+  #stars {
+    position: fixed; inset: 0; z-index: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(79,138,255,0.07) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(167,139,250,0.07) 0%, transparent 60%),
+                var(--bg);
+    overflow: hidden;
+  }
+  #stars::before, #stars::after {
+    content: '';
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 50% 10%, rgba(255,255,255,0.7) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 60%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 25%, rgba(255,255,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 75%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 85%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 90%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5%  90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 33% 55%, rgba(255,255,255,0.3) 0%, transparent 100%);
+    background-size: 600px 600px;
+    animation: twinkle 6s ease-in-out infinite alternate;
+  }
+  #stars::after {
+    background-position: 300px 300px;
+    animation-delay: -3s;
+    animation-duration: 8s;
+  }
+  @keyframes twinkle {
+    from { opacity: 0.6; }
+    to   { opacity: 1; }
+  }
+
+  /* ─── LOADING SCREEN ───────────────────────────────── */
+  #loader {
+    position: fixed; inset: 0; z-index: 1000;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2rem;
+    transition: opacity 0.8s ease, visibility 0.8s ease;
+  }
+  #loader.hidden { opacity: 0; visibility: hidden; }
+
+  .loader-moon {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #d0d8ff, #7090e0 40%, #1a2460);
+    box-shadow: 0 0 40px rgba(79,138,255,0.6), 0 0 80px rgba(79,138,255,0.2);
+    animation: moonPulse 2s ease-in-out infinite;
+    position: relative;
+  }
+  .loader-moon::before {
+    content: '';
+    position: absolute;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    top: 18px; left: 22px;
+    box-shadow: 22px 18px 0 6px rgba(255,255,255,0.08),
+                10px 35px 0 4px rgba(255,255,255,0.1);
+  }
+  @keyframes moonPulse {
+    0%,100% { box-shadow: 0 0 40px rgba(79,138,255,0.6), 0 0 80px rgba(79,138,255,0.2); transform: scale(1); }
+    50%     { box-shadow: 0 0 60px rgba(79,138,255,0.9), 0 0 120px rgba(79,138,255,0.4); transform: scale(1.05); }
+  }
+
+  .loader-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: 0.3em;
+    color: var(--accent);
+    text-shadow: 0 0 30px var(--glow);
+    animation: titleGlow 2s ease-in-out infinite alternate;
+  }
+  @keyframes titleGlow {
+    from { text-shadow: 0 0 20px var(--glow); }
+    to   { text-shadow: 0 0 50px rgba(79,138,255,0.8), 0 0 100px rgba(79,138,255,0.3); }
+  }
+
+  .loader-bar-wrap {
+    width: 240px; height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .loader-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    border-radius: 2px;
+    width: 0%;
+    animation: loadProgress 2.2s cubic-bezier(.4,0,.2,1) forwards;
+    box-shadow: 0 0 10px var(--glow);
+  }
+  @keyframes loadProgress {
+    0%   { width: 0%; }
+    60%  { width: 75%; }
+    100% { width: 100%; }
+  }
+
+  .loader-status {
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    animation: statusCycle 2.2s steps(1) forwards;
+  }
+  @keyframes statusCycle {
+    0%  { content: 'INITIALIZING...'; }
+  }
+
+  /* ─── MAIN MENU ─────────────────────────────────────── */
+  #mainMenu {
+    position: fixed; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 0;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    pointer-events: none;
+  }
+  #mainMenu.visible { opacity: 1; pointer-events: all; }
+
+  .menu-moon {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #d0d8ff, #7090e0 40%, #1a2460);
+    box-shadow: 0 0 60px rgba(79,138,255,0.5), 0 0 120px rgba(79,138,255,0.15);
+    margin-bottom: 1.5rem;
+    position: relative;
+    animation: floatMoon 5s ease-in-out infinite;
+  }
+  .menu-moon::before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+    top: 26px; left: 32px;
+    box-shadow: 30px 25px 0 9px rgba(255,255,255,0.07),
+                14px 52px 0 6px rgba(255,255,255,0.08);
+  }
+  @keyframes floatMoon {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-12px); }
+  }
+
+  .menu-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 4rem;
+    font-weight: 900;
+    letter-spacing: 0.4em;
+    color: var(--text);
+    text-shadow: 0 0 40px var(--glow);
+    margin-bottom: 0.3rem;
+    animation: slideUp 0.8s cubic-bezier(.2,1,.3,1) both;
+    animation-delay: 0.1s;
+  }
+  .menu-subtitle {
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--muted);
+    margin-bottom: 3rem;
+    animation: slideUp 0.8s cubic-bezier(.2,1,.3,1) both;
+    animation-delay: 0.2s;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .menu-nav {
+    display: flex; flex-direction: column; gap: 0.75rem;
+    align-items: center;
+  }
+
+  .menu-btn {
+    width: 260px;
+    padding: 1rem 1.5rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, color 0.2s;
+    animation: slideUp 0.8s cubic-bezier(.2,1,.3,1) both;
+  }
+  .menu-btn:nth-child(1) { animation-delay: 0.3s; }
+  .menu-btn:nth-child(2) { animation-delay: 0.4s; }
+  .menu-btn:nth-child(3) { animation-delay: 0.5s; }
+  .menu-btn:nth-child(4) { animation-delay: 0.6s; }
+
+  .menu-btn::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: -1;
+  }
+  .menu-btn:hover { border-color: var(--accent); color: #fff; }
+  .menu-btn:hover::before { opacity: 0.12; }
+
+  .menu-btn .btn-num {
+    color: var(--accent);
+    margin-right: 1rem;
+    font-size: 0.7rem;
+  }
+
+  .menu-btn .btn-arrow {
+    position: absolute; right: 1rem; top: 50%;
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.2s, right 0.2s;
+    color: var(--accent);
+  }
+  .menu-btn:hover .btn-arrow { opacity: 1; right: 0.75rem; }
+
+  /* ─── MENU SEARCH BAR ──────────────────────────────── */
+  .menu-search-wrap {
+    margin-top: 1.5rem;
+    width: 260px;
+    position: relative;
+    animation: slideUp 0.8s cubic-bezier(.2,1,.3,1) both;
+    animation-delay: 0.65s;
+  }
+  .menu-search-inner {
+    display: flex;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--card);
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .menu-search-inner:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,138,255,0.12);
+  }
+  #menuSearchInput {
+    flex: 1;
+    padding: 0.75rem 0.9rem;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    outline: none;
+  }
+  #menuSearchInput::placeholder { color: var(--muted); }
+  .menu-search-btn {
+    padding: 0 1rem;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.2s, color 0.2s;
+  }
+  .menu-search-btn:hover { background: rgba(79,138,255,0.1); color: #fff; }
+
+  /* ─── SEARCH RESULTS PANEL ─────────────────────────── */
+  #searchPanel {
+    position: fixed; inset: 0; z-index: 30;
+    pointer-events: none;
+  }
+  #searchPanel .panel-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(6,8,15,0.7);
+    backdrop-filter: blur(6px);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    cursor: pointer;
+  }
+  .search-drawer {
+    position: absolute; top: 0; left: 50%; bottom: 0;
+    width: min(800px, 100vw);
+    transform: translateX(-50%) translateY(40px);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(.2,1,.3,1), opacity 0.4s ease;
+    display: flex; flex-direction: column;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+  #searchPanel.open { pointer-events: all; }
+  #searchPanel.open .panel-backdrop { opacity: 1; }
+  #searchPanel.open .search-drawer {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+
+  .search-drawer-header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-shrink: 0;
+  }
+  .search-drawer-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    flex: 1;
+  }
+  .search-drawer-inner {
+    display: flex; flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--card);
+    max-width: 400px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .search-drawer-inner:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,138,255,0.12);
+  }
+  #drawerSearchInput {
+    flex: 1;
+    padding: 0.6rem 0.9rem;
+    background: transparent;
+    border: none;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    outline: none;
+  }
+  #drawerSearchInput::placeholder { color: var(--muted); }
+  .drawer-search-go {
+    padding: 0 0.9rem;
+    background: transparent;
+    border: none;
+    border-left: 1px solid var(--border);
+    color: var(--accent);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.2s;
+  }
+  .drawer-search-go:hover { background: rgba(79,138,255,0.1); }
+
+  .search-iframe-wrap {
+    flex: 1;
+    position: relative;
+    background: #fff;
+  }
+  .search-iframe-placeholder {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 1rem;
+    background: var(--surface);
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    transition: opacity 0.3s;
+  }
+  .search-iframe-placeholder.hidden { opacity: 0; pointer-events: none; }
+  .placeholder-icon { font-size: 2.5rem; opacity: 0.3; }
+
+  #bingFrame {
+    width: 100%; height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* ─── GAMES PANEL (slide in from right) ─────────────── */
+  #gamesPanel {
+    position: fixed; inset: 0; z-index: 20;
+    pointer-events: none;
+  }
+
+  .panel-backdrop {
+    position: absolute; inset: 0;
+    background: rgba(6,8,15,0.6);
+    backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    cursor: pointer;
+  }
+
+  .panel-drawer {
+    position: absolute; top: 0; right: 0; bottom: 0;
+    width: min(520px, 100vw);
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
+    transition: transform 0.45s cubic-bezier(.2,1,.3,1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+
+  #gamesPanel.open { pointer-events: all; }
+  #gamesPanel.open .panel-backdrop { opacity: 1; }
+  #gamesPanel.open .panel-drawer { transform: translateX(0); }
+
+  .panel-header {
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .panel-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+  }
+  .panel-close {
+    width: 32px; height: 32px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1rem;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .panel-close:hover { border-color: var(--accent); color: var(--text); }
+
+  /* Search */
+  .search-wrap {
+    position: relative;
+  }
+  .search-icon {
+    position: absolute; left: 0.9rem; top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+  #searchInput {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.5rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  #searchInput::placeholder { color: var(--muted); }
+  #searchInput:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(79,138,255,0.12);
+  }
+
+  /* Game count */
+  .game-count {
+    padding: 0.5rem 1.5rem 0.75rem;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* Grid */
+  .panel-grid {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+    align-content: start;
+  }
+  .panel-grid::-webkit-scrollbar { width: 5px; }
+  .panel-grid::-webkit-scrollbar-track { background: transparent; }
+  .panel-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Game card */
+  .game-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+    animation: cardIn 0.4s cubic-bezier(.2,1,.3,1) both;
+  }
+  .game-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+    box-shadow: 0 8px 24px rgba(79,138,255,0.2);
+  }
+  .game-card img {
+    width: 100%; aspect-ratio: 16/10;
+    object-fit: cover;
+    display: block;
+    transition: opacity 0.2s;
+  }
+  .game-card:hover img { opacity: 0.85; }
+  .game-card-label {
+    padding: 0.5rem 0.6rem;
+  }
+  .game-card-label h3 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .no-results {
+    grid-column: 1/-1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+  }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* stagger cards */
+  .game-card:nth-child(1)  { animation-delay: 0.05s; }
+  .game-card:nth-child(2)  { animation-delay: 0.1s; }
+  .game-card:nth-child(3)  { animation-delay: 0.15s; }
+  .game-card:nth-child(4)  { animation-delay: 0.2s; }
+  .game-card:nth-child(5)  { animation-delay: 0.25s; }
+  .game-card:nth-child(6)  { animation-delay: 0.3s; }
+  .game-card:nth-child(7)  { animation-delay: 0.35s; }
+  .game-card:nth-child(8)  { animation-delay: 0.4s; }
+
+  /* ─── ORBIT DECO ────────────────────────────────────── */
+  .orbit-ring {
+    position: fixed;
+    border-radius: 50%;
+    border: 1px solid rgba(79,138,255,0.08);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .orbit-ring:nth-child(1) { width: 400px; height: 400px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .orbit-ring:nth-child(2) { width: 600px; height: 600px; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .orbit-ring:nth-child(3) { width: 800px; height: 800px; top: 50%; left: 50%; transform: translate(-50%,-50%); animation: spinRing 40s linear infinite; }
+  @keyframes spinRing {
+    from { transform: translate(-50%,-50%) rotate(0deg); }
+    to   { transform: translate(-50%,-50%) rotate(360deg); }
+  }
+  .orbit-dot {
+    position: absolute; width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    top: -2px; left: 50%;
+    margin-left: -2px;
+    box-shadow: 0 0 8px var(--accent);
+  }
+</style>
+</head>
+<body>
+
+<div id="stars"></div>
+<div class="orbit-ring"></div>
+<div class="orbit-ring"></div>
+<div class="orbit-ring"><div class="orbit-dot"></div></div>
+
+<!-- ── LOADING SCREEN ── -->
+<div id="loader">
+  <div class="loader-moon"></div>
+  <div class="loader-title">MOON</div>
+  <div class="loader-bar-wrap"><div class="loader-bar"></div></div>
+  <div class="loader-status" id="loaderStatus">INITIALIZING...</div>
+</div>
+
+<!-- ── MAIN MENU ── -->
+<div id="mainMenu">
+  <div class="menu-moon"></div>
+  <div class="menu-title">MOON</div>
+  <nav class="menu-nav">
+    <button class="menu-btn" id="openGamesBtn">
+      <span class="btn-num">01</span>GAMES
+      <span class="btn-arrow">→</span>
+    </button>
+    <button class="menu-btn">
+      <span class="btn-num">02</span>SETTINGS
+      <span class="btn-arrow">→</span>
+    </button>
+    <button class="menu-btn" id="openSearchPanelBtn">
+      <span class="btn-num">03</span>WEB SEARCH
+      <span class="btn-arrow">→</span>
+    </button>
+  </nav>
+
+  <div class="menu-search-wrap">
+    <div class="menu-search-inner">
+      <input type="text" id="menuSearchInput" placeholder="SEARCH THE WEB..." autocomplete="off" spellcheck="false">
+      <button class="menu-search-btn" id="menuSearchBtn" title="Search">⌕</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── GAMES PANEL ── -->
+<div id="gamesPanel">
+  <div class="panel-backdrop" id="panelBackdrop"></div>
+  <div class="panel-drawer">
+    <div class="panel-header">
+      <div class="panel-header-top">
+        <span class="panel-title">// GAMES</span>
+        <button class="panel-close" id="closePanel">✕</button>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="searchInput" placeholder="SEARCH GAMES..." autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+    <div class="game-count" id="gameCount">LOADING...</div>
+    <div class="panel-grid" id="gameGrid"></div>
+  </div>
+</div>
+
+<!-- ── DUCKDUCKGO SEARCH PANEL ── -->
+<div id="searchPanel">
+  <div class="panel-backdrop" id="searchPanelBackdrop"></div>
+  <div class="search-drawer">
+    <div class="search-drawer-header">
+      <span class="search-drawer-title">// WEB SEARCH</span>
+      <div class="search-drawer-inner">
+        <input type="text" id="drawerSearchInput" placeholder="SEARCH DUCKDUCKGO..." autocomplete="off" spellcheck="false">
+        <button class="drawer-search-go" id="drawerSearchGo">⌕</button>
+      </div>
+      <button class="panel-close" id="closeSearchPanel">✕</button>
+    </div>
+    <div class="search-iframe-wrap">
+      <div class="search-iframe-placeholder" id="iframePlaceholder">
+        <div class="placeholder-icon">🔍</div>
+        <div>TYPE A QUERY AND PRESS ENTER</div>
+      </div>
+      <iframe id="ddgFrame" src="about:blank" sandbox="allow-scripts allow-forms allow-same-origin allow-popups"></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── Loading screen ── */
+  const statusMsgs = ['INITIALIZING...', 'LOADING ASSETS...', 'SYNCING DATA...', 'READY'];
+  let si = 0;
+  const statusEl = document.getElementById('loaderStatus');
+  const statusTimer = setInterval(() => {
+    si++;
+    if (si < statusMsgs.length) statusEl.textContent = statusMsgs[si];
+    if (si >= statusMsgs.length - 1) clearInterval(statusTimer);
+  }, 550);
+
+  setTimeout(() => {
+    document.getElementById('loader').classList.add('hidden');
+    document.getElementById('mainMenu').classList.add('visible');
+  }, 2600);
+
+  /* ── Games data ── */
+  let allGames = [];
+
+  fetch('games.json')
+    .then(r => r.json())
+    .then(games => { allGames = games; })
+    .catch(() => { allGames = []; });
+
+  /* ── Panel open/close ── */
+  function openPanel() {
+    document.getElementById('gamesPanel').classList.add('open');
+    renderGames(allGames);
+    document.getElementById('searchInput').value = '';
+    document.getElementById('searchInput').focus();
+  }
+  function closePanel() {
+    document.getElementById('gamesPanel').classList.remove('open');
+  }
+
+  document.getElementById('openGamesBtn').addEventListener('click', openPanel);
+  document.getElementById('closePanel').addEventListener('click', closePanel);
+  document.getElementById('panelBackdrop').addEventListener('click', closePanel);
+
+  /* ── Search panel ── */
+  function openSearchPanel(query) {
+    document.getElementById('searchPanel').classList.add('open');
+    const input = document.getElementById('drawerSearchInput');
+    input.value = query || '';
+    if (query) doSearch(query);
+    setTimeout(() => input.focus(), 450);
+  }
+  function closeSearchPanel() {
+    document.getElementById('searchPanel').classList.remove('open');
+    document.getElementById('ddgFrame').src = 'about:blank';
+    document.getElementById('iframePlaceholder').classList.remove('hidden');
+  }
+  // 🔧 Replace this with your Render URL after deploying the proxy
+  const PROXY_URL = 'https://moon-search-proxy.onrender.com';
+
+  function doSearch(q) {
+    if (!q.trim()) return;
+    document.getElementById('iframePlaceholder').classList.add('hidden');
+    document.getElementById('ddgFrame').src = `${PROXY_URL}/search?q=${encodeURIComponent(q)}`;
+  }
+
+  document.getElementById('openSearchPanelBtn').addEventListener('click', () => openSearchPanel(''));
+  document.getElementById('searchPanelBackdrop').addEventListener('click', closeSearchPanel);
+  document.getElementById('closeSearchPanel').addEventListener('click', closeSearchPanel);
+
+  // Menu bar search
+  document.getElementById('menuSearchBtn').addEventListener('click', () => {
+    const q = document.getElementById('menuSearchInput').value;
+    openSearchPanel(q);
+  });
+  document.getElementById('menuSearchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const q = e.target.value;
+      openSearchPanel(q);
+    }
+  });
+
+  // Drawer search
+  document.getElementById('drawerSearchGo').addEventListener('click', () => {
+    doSearch(document.getElementById('drawerSearchInput').value);
+  });
+  document.getElementById('drawerSearchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doSearch(e.target.value);
+    if (e.key === 'Escape') closeSearchPanel();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { closePanel(); closeSearchPanel(); }
+  });
+
+
+  /* ── Render games ── */
+  function renderGames(games) {
+    const grid = document.getElementById('gameGrid');
+    const countEl = document.getElementById('gameCount');
+    grid.innerHTML = '';
+
+    countEl.textContent = games.length === 0
+      ? 'NO GAMES FOUND'
+      : `${games.length} GAME${games.length !== 1 ? 'S' : ''} AVAILABLE`;
+
+    if (games.length === 0) {
+      grid.innerHTML = '<div class="no-results">NO GAMES MATCH YOUR SEARCH</div>';
+      return;
+    }
+
+    games.forEach((game, i) => {
+      const card = document.createElement('div');
+      card.className = 'game-card';
+      card.style.animationDelay = `${i * 0.05}s`;
+      card.onclick = () => location.href = game.page;
+      card.innerHTML = `
+        <img src="${game.thumb}" alt="${game.title}">
+        <div class="game-card-label"><h3>${game.title}</h3></div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  /* ── Search ── */
+  document.getElementById('searchInput').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase().trim();
+    const filtered = q
+      ? allGames.filter(g => g.title.toLowerCase().includes(q))
+      : allGames;
+    renderGames(filtered);
+  });
+</script>
+</body>
+</html>
+```
