@@ -1,10 +1,15 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SELF = 'https://moon20prox-production.up.railway.app'; // change if needed
+
+// Public SearXNG instance — swap this out if it goes down
+// Other reliable options:
+//   https://searx.be
+//   https://searxng.site
+//   https://search.mdosch.de
+const SEARXNG_INSTANCE = 'https://searx.be';
 
 app.use(cors({ origin: '*' }));
 app.use(express.json());
@@ -15,7 +20,6 @@ app.use(express.json());
 app.get('/imgproxy', async (req, res) => {
   const url = req.query.url;
   if (!url) return res.status(400).send('Missing url');
-
   try {
     const response = await axios.get(url, {
       responseType: 'arraybuffer',
@@ -25,7 +29,6 @@ app.get('/imgproxy', async (req, res) => {
       },
       timeout: 10000,
     });
-
     res.setHeader(
       'Content-Type',
       response.headers['content-type'] || 'image/jpeg'
@@ -39,7 +42,7 @@ app.get('/imgproxy', async (req, res) => {
 });
 
 /* ===============================
-   DUCKDUCKGO API SEARCH
+   SEARXNG SEARCH
    =============================== */
 app.get('/search', async (req, res) => {
   const query = req.query.q;
@@ -47,56 +50,30 @@ app.get('/search', async (req, res) => {
     return res.status(400).json({ error: 'Missing query parameter: q' });
 
   try {
-    const response = await axios.get('https://api.duckduckgo.com/', {
+    const response = await axios.get(`${SEARXNG_INSTANCE}/search`, {
       params: {
         q: query,
         format: 'json',
-        no_html: 1,
-        skip_disambig: 1,
+        engines: 'google,bing,brave,duckduckgo',
+        language: 'en',
+        safesearch: 0,
       },
-      timeout: 10000,
+      headers: {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/json',
+      },
+      timeout: 15000,
     });
 
     const data = response.data;
-    const results = [];
-
-    // Main instant answer
-    if (data.AbstractText) {
-      results.push({
-        type: 'instant_answer',
-        title: data.Heading,
-        snippet: data.AbstractText,
-        url: data.AbstractURL || null,
-      });
-    }
-
-    // Related topics
-    if (Array.isArray(data.RelatedTopics)) {
-      data.RelatedTopics.forEach((item) => {
-        if (item.Text && item.FirstURL) {
-          results.push({
-            type: 'related',
-            title: item.Text.split(' - ')[0],
-            snippet: item.Text,
-            url: item.FirstURL,
-          });
-        }
-
-        // Handle nested topics
-        if (item.Topics) {
-          item.Topics.forEach((sub) => {
-            if (sub.Text && sub.FirstURL) {
-              results.push({
-                type: 'related',
-                title: sub.Text.split(' - ')[0],
-                snippet: sub.Text,
-                url: sub.FirstURL,
-              });
-            }
-          });
-        }
-      });
-    }
+    const results = (data.results || []).map((item) => ({
+      type: 'web',
+      title: item.title || '',
+      snippet: item.content || '',
+      url: item.url || '',
+      engine: item.engine || '',
+    }));
 
     res.json({
       query,
@@ -105,7 +82,7 @@ app.get('/search', async (req, res) => {
     });
   } catch (err) {
     console.error('Search API error:', err.message);
-    res.status(500).json({ error: 'Search failed' });
+    res.status(500).json({ error: 'Search failed', detail: err.message });
   }
 });
 
