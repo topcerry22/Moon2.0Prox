@@ -4,7 +4,7 @@ const cors = require('cors');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const SELF = 'https://moonprox.onrender.com';
+const SELF = 'moon20prox-production.up.railway.app';
 
 app.use(cors({ origin: '*' }));
 
